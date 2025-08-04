@@ -27,6 +27,8 @@ kunya = [
 ]
 # children
 
+confirmation_list = ["yes", "true", "sure", "mhm", "okay", "yea", "y"]
+
 name_equation = ""
 
 # Gender/Sex
@@ -61,7 +63,13 @@ else:
     actual_kunya = ""
 
 # Actual Print Statement
-print(sex_kunya + " " + actual_kunya + " " + actual_ism + " " + sex_nasab + " " + actual_nasab + " " + actual_nisbah)
+print("Your name is: ", (sex_kunya.strip() + " " + actual_kunya + " " + actual_ism + " " + sex_nasab + " " + actual_nasab + " " + actual_nisbah))
+
+q = input("Would you like an english translation?")
+if q.strip().lower() in confirmation_list:
+    print("")
+else:
+    print("No worries, enjoy your generated arabic full name.")
 
 
 
