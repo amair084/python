@@ -132,22 +132,30 @@ root.configure(bg="#0F0F0F")
 
 counter_label = tk.Label(root, text="", font=("Helvetica", 10, "bold"), bg="#383838", fg ="white")
 counter_label.pack(pady=15)
-
 logo_path = os.path.join(script_dir, "logo.png")
-from PIL import Image, ImageTk, ImageDraw # type: ignore
-original_image = Image.open(logo_path).convert("RGBA")
-resized_image = original_image.resize((75, 75), Image.Resampling.LANCZOS)
 
-mask = Image.new("L", (75, 75), 0)  # L = greyscale (mask)
-draw = ImageDraw.Draw(mask)
-draw.ellipse((0, 0, 75, 75), fill=255)  # white circle
 
-resized_image.putalpha(mask)
+if os.path.exists(logo_path):
+    from PIL import Image, ImageTk, ImageDraw # type: ignore
+    original_image = Image.open(logo_path).convert("RGBA")
+    resized_image = original_image.resize((75, 75), Image.Resampling.LANCZOS)
 
-logo_img = ImageTk.PhotoImage(resized_image)
+    mask = Image.new("L", (75, 75), 0)  # L = greyscale (mask)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, 75, 75), fill=255)  # white circle
 
-logo_label = tk.Label(root, image=logo_img, bg="#0F0F0F")
-logo_label.pack(side="top", anchor="ne", padx=10, pady=10)
+    resized_image.putalpha(mask)
+
+    logo_img = ImageTk.PhotoImage(resized_image)
+
+    logo_label = tk.Label(root, image=logo_img, bg="#0F0F0F")
+    logo_label.pack(side="top", anchor="ne", padx=10, pady=10)
+
+    icon_path = os.path.join(script_dir, "my_icon.png")  # or .ico
+
+    if os.path.exists(icon_path):
+        icon_image = ImageTk.PhotoImage(file=icon_path)
+        root.iconphoto(False, icon_image)
 
 task_entry = tk.Entry(root, width=40, font=("Helvetica", 14))
 task_entry.pack(pady=10)

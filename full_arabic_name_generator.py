@@ -67,7 +67,7 @@ print("Your name is: ", (sex_kunya.strip() + " " + actual_kunya + " " + actual_i
 
 q = input("Would you like an english translation?")
 if q.strip().lower() in confirmation_list:
-    print("")
+    print("Thats too much work, coming soon in shaa Allah")
 else:
     print("No worries, enjoy your generated arabic full name.")
 
