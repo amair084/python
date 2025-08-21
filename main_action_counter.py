@@ -1,4 +1,4 @@
-## Istighfar Counter
+## Repeatable Action Counter
 
 import sqlite3
 import tkinter as tk
@@ -58,18 +58,34 @@ def add_count(count, action_id):
     conn.commit()
     conn.close()
 
-## --- GUI Functionality
+def add_one_count(action_id):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE actions SET count = count + 1 WHERE id = ?", (action_id,))
+    conn.commit()
+    conn.close()    
 
+## --- GUI Functionality
 def refresh_actions():
-    action_list.delete(0, tk.END)
+    action_list.delete(0, tk.END)  # clear the listbox
     global action_id_map
     action_id_map = {}
     actions = get_actions()
     for display_idx, action in enumerate(actions, start=1):
         action_id, name, count = action
         action_id_map[display_idx] = action_id
-        action_list.insert(tk.END, f"{display_idx}: {name} [{count}]")
-        action_list.itemconfig(tk.END, {'fg': action_color})
+
+        # Build the line text
+        line_text = f"{display_idx}: {name} [{count}]"
+
+        # Insert into listbox
+        action_list.insert(tk.END, line_text)
+
+        # Color the line based on count
+        if count > 0:
+            action_list.itemconfig(tk.END, {'fg':'green'})
+        else:
+            action_list.itemconfig(tk.END, {'fg':'red'})
 
 def add_action_GUI():
     name = action_entry.get()
@@ -100,7 +116,17 @@ def add_count_gui():
         add_count(count, db_id)
         refresh_actions()
     else:
-        messagebox.showerror("Error", "Selection cannot be empty!!!") 
+        messagebox.showerror("Error", "Selection cannot be empty!!!")
+
+def add_one_count_gui():
+    selection = action_list.curselection()
+    if selection:
+        display_idx = selection[0] + 1
+        db_id = action_id_map[display_idx]
+        add_one_count(db_id)
+        refresh_actions()
+    else:
+        messagebox.showerror("Error", "Selection cannot be empty!!!")  
 
 ## -- GUI Important
 
@@ -173,7 +199,11 @@ add_count_button = tk.Button(root, text="   Add Count   ", bg="#252525", fg="whi
                        font=("Helvetica", 10, "bold"), command=add_count_gui)
 add_count_button.pack(pady=5)
 
-action_list = tk.Listbox(root, width=30, height=20, font=("Helvetica", 12), fg="red")
+add_count_button = tk.Button(root, text="Add One to Count", bg="#252525", fg="white",
+                       font=("Helvetica", 8, "bold"), command=add_one_count_gui)
+add_count_button.pack(pady=5)
+
+action_list = tk.Listbox(root, width=30, height=15, font=("Helvetica", 12), fg="red")
 action_list.pack(pady=5)
 
 
