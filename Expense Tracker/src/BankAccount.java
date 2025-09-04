@@ -2,7 +2,6 @@ import java.sql.*;
 import java.time.LocalDate;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.awt.image.*;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -25,7 +24,8 @@ public class BankAccount {
                 date TEXT NOT NULL,
                 description TEXT,
                 amount REAL NOT NULL,
-                balance REAL NOT NULL
+                balance REAL NOT NULL,
+                category TEXT NOT NULL
             );
         """;
 
@@ -55,11 +55,11 @@ public class BankAccount {
         return balance;
     }
 
-    public static void addTransaction(String desc, double amount) {
+    public static void addTransaction(String desc, double amount, String category) {
         double currentBalance = getCurrentBalance();
         double newBalance = currentBalance + amount;
 
-        String sql = "INSERT INTO transactions(date, description, amount, balance) VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO transactions(date, description, amount, balance, category) VALUES(?, ?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + DB_FILE);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -68,6 +68,7 @@ public class BankAccount {
             pstmt.setString(2, desc);
             pstmt.setDouble(3, amount);
             pstmt.setDouble(4, newBalance);
+            pstmt.setString(5, category);
             pstmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -77,16 +78,17 @@ public class BankAccount {
 
     public static String getTransactionHistory() {
         StringBuilder sb = new StringBuilder();
-        String sql = "SELECT date, description, amount, balance FROM transactions ORDER BY id ASC";
+        String sql = "SELECT date, description, amount, balance, category FROM transactions ORDER BY id ASC";
 
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + DB_FILE);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                sb.append(String.format(" %s  %s | %+.2f | Balance: %.2f%n ",
+                sb.append(String.format("%s  |  %s | %s | %+.2f | Balance: %.2f%n",
                         rs.getString("date"),
                         rs.getString("description"),
+                        rs.getString("category"),
                         rs.getDouble("amount"),
                         rs.getDouble("balance")));
             }
@@ -107,44 +109,57 @@ public class BankAccount {
 
         // Top panel: Current balance
         // Load logo
-        Image logoImage = null;
-        try {
-            BufferedImage img = ImageIO.read(new File("logo.png")); // logo in same folder
-            Image scaled = img.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
 
-            // Circular mask
-            BufferedImage circleImg = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = circleImg.createGraphics();
-            g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 50, 50));
-            g2.drawImage(scaled, 0, 0, null);
-            g2.dispose();
+        // GUI CONFIG
 
-            logoImage = circleImg; // use for icon too
+        boolean logoOn = false;
 
-        } catch (Exception e) {
-            System.out.println("Logo not found.");
-        }
 
-        if (logoImage != null) frame.setIconImage(logoImage);
+        //
 
-        ImageIcon logo = new ImageIcon("logo.png");
-        Image img = logo.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-        logo = new ImageIcon(img);
         JPanel topPanel = new JPanel();
-        JLabel logoLabel = new JLabel(logo);
-        topPanel.add(logoLabel);
-        JLabel balanceLabel = new JLabel("Balance: $" + getCurrentBalance());
-        balanceLabel.setFont(new Font("Verdana", Font.BOLD, 18));
-        topPanel.add(balanceLabel);
-        frame.add(topPanel, BorderLayout.NORTH);
-        topPanel.setBackground(new Color(30, 30, 30));
-        balanceLabel.setForeground(new Color(225, 225, 225));  
+
+        if (logoOn == true) {
+            Image logoImage = null;
+            try {
+                BufferedImage img = ImageIO.read(new File("logo.png")); // logo in same folder
+                Image scaled = img.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+
+                // Circular mask
+                BufferedImage circleImg = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g2 = circleImg.createGraphics();
+                g2.setClip(new java.awt.geom.Ellipse2D.Float(0, 0, 50, 50));
+                g2.drawImage(scaled, 0, 0, null);
+                g2.dispose();
+
+                logoImage = circleImg; // use for icon too
+
+            } catch (Exception e) {
+                System.out.println("Logo not found.");
+            }
+
+            if (logoImage != null) frame.setIconImage(logoImage);
+
+            ImageIcon logo = new ImageIcon("logo.png");
+            Image img = logo.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+            logo = new ImageIcon(img);
+            JLabel logoLabel = new JLabel(logo);
+            topPanel.add(logoLabel);
+        }
+            JLabel balanceLabel = new JLabel(String.format("Balance: $%.2f", getCurrentBalance()));
+            balanceLabel.setFont(new Font("Verdana", Font.BOLD, 18));
+            topPanel.add(balanceLabel);
+            frame.add(topPanel, BorderLayout.NORTH);
+            topPanel.setBackground(new Color(30, 30, 30));
+            balanceLabel.setForeground(new Color(225, 225, 225));  
+
+        
         
 
         // Center panel: Transaction history
         JTextArea historyArea = new JTextArea();
         historyArea.setEditable(false);
-        historyArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        historyArea.setFont(new Font("Verdana", Font.PLAIN, 12));
         JScrollPane scrollPane = new JScrollPane(historyArea);
         historyArea.setText(getTransactionHistory());
         frame.add(scrollPane, BorderLayout.CENTER);
@@ -154,12 +169,14 @@ public class BankAccount {
 
         // Bottom panel: Add transactions
         JPanel bottomPanel = new JPanel();
-        bottomPanel.setLayout(new GridLayout(3, 2, 5, 5));
+        bottomPanel.setLayout(new GridLayout(4, 2, 5, 5));
 
         JTextField descField = new JTextField();
+        JTextField categoryField = new JTextField();
         JTextField amountField = new JTextField();
 
         JButton depositButton = new JButton("Deposit");
+
         JButton withdrawButton = new JButton("Withdraw");
         depositButton.setBackground(new Color(30, 30, 30));
         depositButton.setForeground(new Color(225, 225, 225));
@@ -170,6 +187,10 @@ public class BankAccount {
         descLabel.setForeground(Color.WHITE);  
         bottomPanel.add(descLabel);
         bottomPanel.add(descField);
+        JLabel categoryLabel = new JLabel("Category:");
+        categoryLabel.setForeground(Color.WHITE);  
+        bottomPanel.add(categoryLabel);
+        bottomPanel.add(categoryField);
         JLabel amountLabel = new JLabel("Amount:");
         amountLabel.setForeground(Color.WHITE);  
         bottomPanel.add(amountLabel);
@@ -185,6 +206,7 @@ public class BankAccount {
         // Button actions
         depositButton.addActionListener(e -> {
             String desc = descField.getText();
+            String category = categoryField.getText();
             double amt;
             try {
                 amt = Double.parseDouble(amountField.getText());
@@ -192,15 +214,17 @@ public class BankAccount {
                 JOptionPane.showMessageDialog(frame, "Enter a valid number!");
                 return;
             }
-            addTransaction(desc, amt);
+            addTransaction(desc, amt, category);
             descField.setText("");
             amountField.setText("");
+            categoryField.setText("");
             balanceLabel.setText("Balance: $" + getCurrentBalance());
             historyArea.setText(getTransactionHistory());
         });
 
         withdrawButton.addActionListener(e -> {
             String desc = descField.getText();
+            String category = categoryField.getText();
             double amt;
             try {
                 amt = Double.parseDouble(amountField.getText());
@@ -208,9 +232,10 @@ public class BankAccount {
                 JOptionPane.showMessageDialog(frame, "Enter a valid number!");
                 return;
             }
-            addTransaction(desc, -amt);
+            addTransaction(desc, -amt, category);
             descField.setText("");
             amountField.setText("");
+            categoryField.setText("");
             balanceLabel.setText("Balance: $" + getCurrentBalance());
             historyArea.setText(getTransactionHistory());
         });
