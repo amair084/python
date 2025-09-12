@@ -17,8 +17,13 @@ public class SudokuGenerator {
             solution[r] = sb.toString();
         }
 
+        boolean Mode = MainMenu.GetMode();
+
         Random rand = new Random();
         int cellsToRemove = 81 - 35;
+        if (Mode) {
+            cellsToRemove = 81 - 20;
+        }
         while (cellsToRemove > 0) {
             int r = rand.nextInt(9);
             int c = rand.nextInt(9);
