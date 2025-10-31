@@ -1,22 +1,49 @@
-#Aaron Mairel
-#CIS150AB 28829
-#9/15/2025
-#Calculation of the price of 2 A Computers and 5 B Computers with tax included.
+import sqlite3
+import os
+import random
+import string
 
+data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+os.makedirs(data_dir, exist_ok=True)
 
-# Setting price for computers and setting tax
-price_a = 3150
-price_b = 1350.55
+def random_string(length=6):
+    return ''.join(random.choices(string.ascii_letters, k=length))
 
-tax = 0.083 #8.3%
+def random_integer(min_val=0, max_val=100):
+    return random.randint(min_val, max_val)
 
-# Find total price of the order
-total_order_price = ((price_a * 2) + (price_b * 5))
-price_after_tax = total_order_price*(tax+1)
+def random_float(min_val=0, max_val=100):
+    return round(random.uniform(min_val, max_val), 2)
 
-# Print the price for the customer
+def create_mixed_db(db_name, num_rows=15):
+    db_path = os.path.join(data_dir, db_name + ".db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
 
-print(f"Your total is ${total_order_price:.2f}")
-print(f"The price of each A Computer was ${price_a:.2f}")
-print(f"The price of each B Computer was ${price_b:.2f}")
-print(f"The tax on this order was ${tax*total_order_price:.2f} / 8.3%")
+    # Create a generic table with mixed types
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS generic_table (
+            name TEXT,
+            age INTEGER,
+            score FLOAT,
+            city TEXT
+        )
+    """)
+
+    # Insert random data
+    for _ in range(num_rows):
+        row = (
+            random_string(),           # name
+            random_integer(18, 65),    # age
+            random_float(0, 100),      # score
+            random_string(5)           # city
+        )
+        cursor.execute("INSERT INTO generic_table VALUES (?, ?, ?, ?)", row)
+
+    conn.commit()
+    conn.close()
+    print(f"Created {db_path} with {num_rows} rows.")
+
+# Generate 3 test DBs
+for i in range(1, 4):
+    create_mixed_db(f"mixed_db_{i}", num_rows=20)
